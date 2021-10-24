@@ -4,7 +4,7 @@
 #include <fstream>
 #include <exception>
 
-namespace IO {
+namespace ACO {
   class Inputer {
     public:
       explicit Inputer();
