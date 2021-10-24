@@ -19,7 +19,7 @@ namespace ACO {
     ans = MAX;
   }
 
-  void ACO::init(const std::vector <std::vector <int>> &_map) {
+  void ACO::init(const std::vector <std::vector <int>> &_map, const Point &end) {
     map = std::make_unique<Map>(_map);
     add.resize(map -> get_col());
     phe.resize(map -> get_col());
@@ -27,17 +27,222 @@ namespace ACO {
       add[i].resize(map -> get_row());
       phe[i].resize(map -> get_row());
     }
+
+    int N1 = map -> get_col(), N2 = map -> get_row();
+    double k = 0.9, eta = 0.9;
+    int p0 = 5;
+
+    double force[N1][N2][4];
+    for (int i = 0; i < N1; i++) {
+      for (int j = 0; j < N2; j++) {
+        force[i][j][0] = 0.0;
+        force[i][j][1] = 0.0;
+        force[i][j][2] = 0.0;
+        force[i][j][3] = 0.0;
+      }
+    }
+
+    for (int i = 0; i < N1; i++) {
+      for (int j = 0; j < N2; j++) {
+        if ((*map)[i][j] != 1) {
+          int x0 = i, y0 = j, x1, y1;
+          for (int x1 = std::max(x0 - p0, 0); x1 < std::min(N1, x0 + p0 + 1); x1 ++) {
+            for (int y1 = std::max(x0 - p0, 0); y1 < std::min(N1, x0 + p0 + 1); y1 ++) {
+              if ((*map)[x1][y1] != 1) continue;
+
+              double base = (1.0 / get_dist(Point(x0, y0), Point(x1, y1)) - 1.0 / p0);
+              double U = eta * base * base / 2;
+              
+              double cos_x , cos_y;
+              if (x0 - x1 != 0) {
+                cos_x = get_dist(Point(x0, y0), Point(x1, y1)) / (x0 - x1);
+              } else {
+                cos_x = 0;
+              }
+              if (y0 - y1 != 0) {
+                cos_y = get_dist(Point(x0, y0), Point(x1, y1)) / (y0 - y1);
+              } else {
+                cos_y = 0;
+              }
+
+              double force_x = U * cos_x;
+              double force_y = U * cos_y;
+
+              if (force_x < 0) {
+                force[x0][y0][1] += force_x;
+              } else {
+                force[x0][y0][3] += force_x;
+              }
+              if (force_y < 0) {
+                force[x0][y0][0] += force_y;
+              } else {
+                force[x0][y0][2] += force_y;
+              }
+            }
+          }
+
+          double base = (1.0 / get_dist(Point(x0, y0), Point(end.x, end.y)) - 1.0 / p0);
+          double U = eta * base * base / 2;
+          
+          double cos_x , cos_y;
+          if (x0 - x1 != 0) {
+            cos_x = get_dist(Point(x0, y0), Point(end.x, end.y)) / (x0 - end.x);
+          } else {
+            cos_x = 0;
+          }
+          if (y0 - y1 != 0) {
+            cos_y = get_dist(Point(x0, y0), Point(end.x, end.y)) / (y0 - end.y);
+          } else {
+            cos_y = 0;
+          }
+
+          double force_x = U * cos_x;
+          double force_y = U * cos_y;
+
+          if (force_x >= 0) {
+            force[x0][y0][1] += force_x;
+          } else {
+            force[x0][y0][3] += force_x;
+          }
+          if (force_y >= 0) {
+            force[x0][y0][0] += force_y;
+          } else {
+            force[x0][y0][2] += force_y;
+          }
+
+          force_x = force[x0][y0][1] - force[x0][y0][3];
+          force_y = force[x0][y0][0] - force[x0][y0][2];
+          double h = sqrt(force_x * force_x + force_y * force_y);
+          cos_x = h / abs(force_x);
+          cos_y = h / abs(force_y);
+          double cos_mid = sqrt(2) / 2;
+          double cos_to_mid = cos_mid * cos_x + cos_mid * cos_y;
+
+          if (force_x >= 0 && force_y >= 0) {
+            if (cos_to_mid >= cos_x && cos_to_mid >= cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[2][op];
+              }
+            } else if (cos_x > cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[3][op];
+              }
+            } else {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[1][op];
+              }
+            }
+          } else if (force_x < 0 && force_y >= 0) {
+            if (cos_to_mid >= cos_x && cos_to_mid >= cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[0][op];
+              }
+            } else if (cos_x > cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[7][op];
+              }
+            } else {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[1][op];
+              }
+            }
+          } else if (force_x >= 0 && force_y < 0) {
+            if (cos_to_mid >= cos_x && cos_to_mid >= cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[4][op];
+              }
+            } else if (cos_x > cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[3][op];
+              }
+            } else {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[5][op];
+              }
+            }
+          } else {
+            if (cos_to_mid >= cos_x && cos_to_mid >= cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[6][op];
+              }
+            } else if (cos_x > cos_y) {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[7][op];
+              }
+            } else {
+              for (int op = 0; op < 8; op ++) {
+                int tx = x0 + dx[op];
+                int ty = y0 + dy[op];
+                if (!check(tx, ty, N1, N2)) {
+                  continue;
+                }
+                phe[tx][ty] += update_phe[5][op];
+              }
+            }
+          }
+        }
+        map->reset_vis(i, j);
+      }
+    }
   }
 
   bool ACO::find_path(const Point &start, const Point &end) {
     int N1 = map -> get_col(), N2 = map -> get_row();
-
-    for (int i = 0; i < N1; i++) {
-      for (int j = 0; j < N2; j++) {
-        phe[i][j] = IN;
-        map->reset_vis(i, j);
-      }
-    }
 
     std::stack<Point> stackpath[M];
     Map Ini_map[M];

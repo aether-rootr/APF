@@ -26,15 +26,15 @@ int main() {
 
   for (int i = 0; i < 8; i ++) {
     for (int j = 0; j < 8; j++) {
-      std::cout << graph[i][j];
+      std::cout << graph[i][j] << " ";
     }std::cout << std::endl;
   }
 
   ACO::ACO aco(10, 4000, 1, 2, 2, 0.7, 10);
-  aco.init(graph);
   ACO::Point start, end;
   start.x = 0, start.y = 0;
   end.x = 7, end.y = 7;
+  aco.init(graph, end);
   bool flag = aco.find_path(start, end);
 
   if (flag) {

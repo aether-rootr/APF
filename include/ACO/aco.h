@@ -13,7 +13,7 @@ namespace ACO {
   class ACO {
     public:
       explicit ACO(const int &_M = 10, const int &_RcMax = 2000, const double &_IN = 1, const double &_alphe = 2, const double &_beta = 2, const double &_rout = 0.7, const double &_Q = 10);
-      void init(const std::vector <std::vector <int> > &_map);
+      void init(const std::vector <std::vector <int> > &_map, const Point &end);
       bool find_path(const Point &start, const Point &end);
       double get_ans() const;
       std::stack<Point> get_ans_path() const;
