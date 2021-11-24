@@ -72,7 +72,10 @@ namespace ACO {
         );
       }
 
+      double k = 0.9, eta = 0.9;
       std::vector< std::future<bool> > round_work;
+
+      int p0 = 5;
 
       for (int i = 0; i < M; i++) {
         round_init[i].get();
@@ -80,6 +83,91 @@ namespace ACO {
           pool.enqueue([&](int id) {
             while ((AntPos[id].x != end.x) || (AntPos[id].y != end.y)) {
               double psum = 0;
+              
+              double force[4];
+              int x0 = AntPos[id].x, y0 =  AntPos[id].y;
+              for (int x1 = std::max(x0 - p0, 0); x1 < std::min(N1, x0 + p0 + 1); x1 ++) {
+                for (int y1 = std::max(x0 - p0, 0); y1 < std::min(N1, x0 + p0 + 1); y1 ++) {
+                  if ((*map)[x1][y1] != 1) continue;
+
+                  double base = (1.0 / get_dist(Point(x0, y0), Point(x1, y1)) - 1.0 / p0);
+                  double U = eta * base * base / 2;
+                  
+                  double cos_x , cos_y;
+                  if (x0 - x1 != 0) {
+                    cos_x = get_dist(Point(x0, y0), Point(x1, y1)) / (x0 - x1);
+                  } else {
+                    cos_x = 0;
+                  }
+                  if (y0 - y1 != 0) {
+                    cos_y = get_dist(Point(x0, y0), Point(x1, y1)) / (y0 - y1);
+                  } else {
+                    cos_y = 0;
+                  }
+
+                  double force_x = U * cos_x;
+                  double force_y = U * cos_y;
+
+                  if (force_x < 0) {
+                    force[1] += force_x;
+                  } else {
+                    force[3] += force_x;
+                  }
+                  if (force_y < 0) {
+                    force[0] += force_y;
+                  } else {
+                    force[2] += force_y;
+                  }
+                }
+              }
+
+              double base = (1.0 / get_dist(Point(x0, y0), Point(end.x, end.y)) - 1.0 / p0);
+              double U = eta * base * base / 2;
+              
+              double cos_x , cos_y;
+              if (x0 - end.x != 0) {
+                cos_x = get_dist(Point(x0, y0), Point(end.x, end.y)) / (x0 - end.x);
+              } else {
+                cos_x = 0;
+              }
+              if (y0 - end.y != 0) {
+                cos_y = get_dist(Point(x0, y0), Point(end.x, end.y)) / (y0 - end.y);
+              } else {
+                cos_y = 0;
+              }
+
+              double force_x = U * cos_x;
+              double force_y = U * cos_y;
+
+              if (force_x >= 0) {
+                force[1] += force_x;
+              } else {
+                force[3] += force_x;
+              }
+              if (force_y >= 0) {
+                force[0] += force_y;
+              } else {
+                force[2] += force_y;
+              }
+              
+              force_x = force[1] - force[3];
+              force_y = force[0] - force[2];
+              double cos45 = sqrt(2) / 2;
+              double cos135 = - sqrt(2) / 2;
+              double lambda = 0.5;
+              double r = 2;
+
+              double q[8];
+              q[0] = lambda * exp(force_y * cos45 + force_x * cos135);
+              q[1] = lambda * exp(force_y);
+              q[2] = lambda * exp(force_y * cos45 + force_x * cos45);
+              q[3] = lambda * exp(force_x);
+              q[4] = lambda * exp(force_y * cos135 + force_x * cos45);
+              q[5] = lambda * exp(-force_y);
+              q[6] = lambda * exp(force_y * cos135 + force_x * cos135);
+              q[7] = lambda * exp(-force_x);
+
+
               for (int x = 0; x < 8; x++) {
                 int tx = AntPos[id].x + dx[x];
                 int ty = AntPos[id].y + dy[x];
@@ -91,8 +179,9 @@ namespace ACO {
                     continue;
                   }
                 }
+
                 if (Ini_map[id].get_vis(AntPos[id].x, AntPos[id].y, x) == 0 && Ini_map[id][tx][ty] != 1) {
-                  psum += pow(phe[tx][ty], alphe) * pow((10.0/stackpath[id].size()), beta);
+                  psum += pow(phe[tx][ty], alphe) * pow((10.0/stackpath[id].size()), beta) * pow(q[x], r);
                 }
               }
 
@@ -112,7 +201,7 @@ namespace ACO {
                     }
                   }
                   if (Ini_map[id].get_vis(AntPos[id].x, AntPos[id].y, x) == 0 && Ini_map[id][tx][ty] != 1) {
-                    pro += pow(phe[tx][ty], alphe) * pow((10.0/stackpath[id].size()), beta) / psum;
+                    pro += pow(phe[tx][ty], alphe) * pow((10.0/stackpath[id].size()), beta) * pow(q[x], r) / psum;
                     if (pro >= drand) {
                       break;
                     }
