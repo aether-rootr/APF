@@ -1,3 +1,11 @@
+/**
+ * 这里实现了一个线程池，使用方法参照 https://github.com/progschj/ThreadPool
+ * 关于线程池:
+ * https://en.wikipedia.org/wiki/Thread_pool
+ * https://zh.wikipedia.org/wiki/%E7%BA%BF%E7%A8%8B%E6%B1%A0
+ * https://baike.baidu.com/item/%E7%BA%BF%E7%A8%8B%E6%B1%A0/4745661?fr=aladdin
+ * 这里多说几句，这里的线程池是基于cpp的一种回调机制实现的，所以跟异步函数的使用是类似的
+ */
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 

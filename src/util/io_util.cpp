@@ -1,3 +1,6 @@
+/**
+ * 这里定义了一个io类，希望未来能够把它接入到算法中
+ */
 #include "io_util.h"
 
 namespace ACO {

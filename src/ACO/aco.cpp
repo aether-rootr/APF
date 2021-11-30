@@ -1,3 +1,6 @@
+/**
+ * 蚁群算法的实现
+ */
 #include <math.h>
 #include <thread>
 #include <vector>
@@ -43,6 +46,7 @@ namespace ACO {
     Map Ini_map[M];
     Point AntPos[M];
 
+    // 下面这个部分是用于获取cpu核心数以用于实现线程池的
     int cpu_count = 1;
 #ifdef WINDOWS
   SYSTEM_INFO sysInfo;
@@ -52,6 +56,7 @@ namespace ACO {
   cpu_count = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 
+    // 线程池
     ThreadPool::ThreadPool pool(cpu_count);
 
     int round = 0;

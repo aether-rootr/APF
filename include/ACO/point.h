@@ -1,3 +1,6 @@
+/**
+ * 这个文件中定义了一个点结构体，用于描述一个二维的点
+ */
 #ifndef POINT_H
 #define POINT_H
 

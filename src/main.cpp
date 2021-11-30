@@ -1,3 +1,6 @@
+/**
+ * 这里是main函数，整个程序的入口，建议读代码从这里开始
+ */
 #include <vector>
 #include <iostream>
 #include "ACO/aco.h"
