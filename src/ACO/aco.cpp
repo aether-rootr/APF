@@ -117,6 +117,11 @@ namespace ACO {
           cos_y = h / abs(force_y);
           double cos_mid = sqrt(2) / 2;
           double cos_to_mid = cos_mid * cos_x + cos_mid * cos_y;
+          
+          /**
+           * 这里在实现的时候通过复杂的判断后，通过循环提前编写好的权值矩阵来给信息素赋值
+           * 减少了编码量，并且可以进一步的权值表来降低代码复杂性
+           */
 
           if (force_x >= 0 && force_y >= 0) {
             if (cos_to_mid >= cos_x && cos_to_mid >= cos_y) {
