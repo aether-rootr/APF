@@ -150,6 +150,11 @@ namespace ACO {
                 force[2] += force_y;
               }
               
+              /**
+               * 这里有个小细节，不是去计算整个力的合力，而是计算了x,y方向的两个分力，再去计算45度方向
+               * 的力, 这样做的一个好处一是避免了一些浮点数误差，二是简化了一些代码的实现
+               */
+
               force_x = force[1] - force[3];
               force_y = force[0] - force[2];
               double cos45 = sqrt(2) / 2;
